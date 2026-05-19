@@ -7,6 +7,7 @@ use App\Http\Requests\Api\Billing\AddTimeRequest;
 use App\Http\Requests\Api\Billing\StartStationRequest;
 use App\Models\Station;
 use App\Services\Billing\StationService;
+use App\Support\ApiResponse;
 
 class StationController extends Controller
 {
@@ -19,12 +20,13 @@ class StationController extends Controller
 
     public function index()
     {
-        return response()->json($this->stationService->list());
+        return ApiResponse::success('Daftar station berhasil diambil.', $this->stationService->list());
     }
 
     public function start(StartStationRequest $request, Station $station)
     {
-        return response()->json(
+        return ApiResponse::success(
+            'Station berhasil dimulai.',
             $this->stationService->start(
                 $station, 
                 $request->input('customer_name'), 
@@ -36,17 +38,18 @@ class StationController extends Controller
 
     public function pause(Station $station)
     {
-        return response()->json($this->stationService->pause($station));
+        return ApiResponse::success('Station berhasil dijeda.', $this->stationService->pause($station));
     }
 
     public function stop(Station $station)
     {
-        return response()->json($this->stationService->stop($station));
+        return ApiResponse::success('Station berhasil dihentikan.', $this->stationService->stop($station));
     }
 
     public function addTime(AddTimeRequest $request, Station $station)
     {
-        return response()->json(
+        return ApiResponse::success(
+            'Waktu station berhasil ditambahkan.',
             $this->stationService->addTime($station, (int) $request->input('minutes'))
         );
     }

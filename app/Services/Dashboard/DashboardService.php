@@ -18,14 +18,16 @@ class DashboardService
 
     public function summary()
     {
+        $hourExpression = $this->hourExpression();
+
         $todayRevenue = (float) Transaction::query()
             ->whereDate('created_at', now()->toDateString())
             ->sum('total');
 
         $busyHours = Transaction::query()
-            ->selectRaw('HOUR(created_at) as hour, SUM(total) as total')
+            ->selectRaw($hourExpression.' as hour, SUM(total) as total')
             ->whereDate('created_at', now()->toDateString())
-            ->groupBy(DB::raw('HOUR(created_at)'))
+            ->groupBy(DB::raw($hourExpression))
             ->orderByDesc('total')
             ->limit(5)
             ->get()
@@ -45,5 +47,14 @@ class DashboardService
             'stations' => $this->stationService->list(),
             'busy_hours' => $busyHours,
         ];
+    }
+
+    protected function hourExpression(): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'pgsql' => 'EXTRACT(HOUR FROM created_at)',
+            'sqlite' => "CAST(strftime('%H', created_at) AS INTEGER)",
+            default => 'HOUR(created_at)',
+        };
     }
 }

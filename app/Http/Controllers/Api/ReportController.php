@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Reports\DailyReportRequest;
 use App\Services\Reports\DailyReportService;
+use App\Support\ApiResponse;
 
 class ReportController extends Controller
 {
@@ -12,6 +13,6 @@ class ReportController extends Controller
     {
         $date = $request->input('date', now()->toDateString());
 
-        return response()->json($dailyReportService->daily($date));
+        return ApiResponse::success('Laporan harian berhasil diambil.', $dailyReportService->daily($date));
     }
 }

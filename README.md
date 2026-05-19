@@ -1,65 +1,157 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# PS Backend API
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend Laravel untuk aplikasi billing/POS PlayStation. Project ini disiapkan sebagai REST API standalone yang bisa dipakai frontend Vue dari repository/domain berbeda.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.2+
+- Laravel 11
+- Laravel Sanctum personal access token
+- PostgreSQL atau MySQL
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Setup Lokal
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
 
-## Learning Laravel
+Default seed user:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Email | Password |
+| --- | --- |
+| admin@test.com | password |
+| cashier@test.com | password |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+API berjalan di:
 
-## Laravel Sponsors
+```text
+http://localhost:8000/api
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## Environment Penting
 
-### Premium Partners
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://api.example.com
+FRONTEND_URL=https://app.example.com
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=ps_backend
+DB_USERNAME=postgres
+DB_PASSWORD=secret
 
-## Contributing
+CORS_ALLOWED_ORIGINS=https://app.example.com
+CORS_ALLOWED_METHODS=GET,POST,PUT,PATCH,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Accept,Authorization,Content-Type,X-Requested-With
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Untuk deployment, jangan gunakan `CORS_ALLOWED_ORIGINS=*` jika API memakai authorization header. Isi domain frontend yang valid.
 
-## Code of Conduct
+## Format Response API
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Success:
 
-## Security Vulnerabilities
+```json
+{
+  "success": true,
+  "message": "Success message",
+  "data": {}
+}
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Error:
 
-## License
+```json
+{
+  "success": false,
+  "message": "Error message",
+  "errors": {}
+}
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# ps-backend
+Semua endpoint `/api/*` mengembalikan JSON, termasuk validation error, unauthenticated, not found, method not allowed, rate limit, dan server error.
+
+## Authentication
+
+Login menggunakan Sanctum bearer token, bukan session Laravel.
+
+```http
+POST /api/auth/login
+Accept: application/json
+Content-Type: application/json
+```
+
+```json
+{
+  "email": "admin@test.com",
+  "password": "password",
+  "device_name": "vue-frontend"
+}
+```
+
+Gunakan token dari response:
+
+```http
+Authorization: Bearer {access_token}
+```
+
+Endpoint auth:
+
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
+
+## Endpoint Utama
+
+- `GET /api/health`
+- `GET /api/dashboard/summary`
+- `GET /api/stations`
+- `POST /api/stations/{station}/start`
+- `POST /api/stations/{station}/pause`
+- `POST /api/stations/{station}/stop`
+- `POST /api/stations/{station}/add-time`
+- `GET /api/products`
+- `POST /api/checkout`
+- `GET /api/transactions`
+- `GET /api/reports/daily`
+- `GET /api/settings`
+- `PUT /api/settings`
+- `POST /api/settings/reset`
+
+## Postman
+
+Import dua file ini:
+
+- `ps-backend.postman_collection.json`
+- `ps-backend.postman_environment.json`
+
+Pilih environment `PS Backend API - Local`, jalankan request `Auth / Login`, lalu token otomatis disimpan ke variable `token`.
+
+## Production Checklist
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+Pastikan:
+
+- `APP_DEBUG=false`
+- `APP_KEY` sudah dibuat
+- `APP_URL` menunjuk domain API
+- `CORS_ALLOWED_ORIGINS` hanya berisi domain frontend
+- web server mengarah ke folder `public`
+- permission `storage` dan `bootstrap/cache` bisa ditulis
+- scheduler/queue dikonfigurasi bila nanti ada job async
+
+Frontend Vue lama masih ada di repository ini, tetapi backend API tidak bergantung pada build frontend untuk berjalan. Untuk deployment API standalone, cukup deploy kode Laravel, dependency Composer, database, dan konfigurasi web server.

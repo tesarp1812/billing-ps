@@ -10,6 +10,9 @@ class DailyReportService
 {
     public function daily(string $date)
     {
+        $hourExpression = $this->hourExpression();
+        $dateExpression = $this->dateExpression();
+
         $revenue = (float) Transaction::query()
             ->whereDate('created_at', $date)
             ->sum('total');
@@ -19,9 +22,9 @@ class DailyReportService
             ->count();
 
         $busyHours = StationSession::query()
-            ->selectRaw('HOUR(created_at) as hour, COUNT(*) as total_sessions, SUM(subtotal) as total_revenue')
+            ->selectRaw($hourExpression.' as hour, COUNT(*) as total_sessions, SUM(subtotal) as total_revenue')
             ->whereDate('created_at', $date)
-            ->groupBy(DB::raw('HOUR(created_at)'))
+            ->groupBy(DB::raw($hourExpression))
             ->orderBy('hour')
             ->get()
             ->map(function ($item) {
@@ -34,9 +37,9 @@ class DailyReportService
             ->values();
 
         $sevenDays = Transaction::query()
-            ->selectRaw('DATE(created_at) as date, SUM(total) as total')
+            ->selectRaw($dateExpression.' as date, SUM(total) as total')
             ->whereDate('created_at', '>=', now()->subDays(6)->toDateString())
-            ->groupBy(DB::raw('DATE(created_at)'))
+            ->groupBy(DB::raw($dateExpression))
             ->orderBy('date')
             ->get()
             ->map(function ($item) {
@@ -55,5 +58,22 @@ class DailyReportService
             'busy_hours' => $busyHours,
             'seven_day_revenue' => $sevenDays,
         ];
+    }
+
+    protected function hourExpression(): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'pgsql' => 'EXTRACT(HOUR FROM created_at)',
+            'sqlite' => "CAST(strftime('%H', created_at) AS INTEGER)",
+            default => 'HOUR(created_at)',
+        };
+    }
+
+    protected function dateExpression(): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'sqlite' => 'date(created_at)',
+            default => 'DATE(created_at)',
+        };
     }
 }

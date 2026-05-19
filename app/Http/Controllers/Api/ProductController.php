@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Products\ProductIndexRequest;
 use App\Models\Product;
+use App\Support\ApiResponse;
 
 class ProductController extends Controller
 {
@@ -20,6 +21,6 @@ class ProductController extends Controller
             $query->where('category', $request->input('category'));
         }
 
-        return response()->json($query->get());
+        return ApiResponse::success('Daftar produk berhasil diambil.', $query->get());
     }
 }
