@@ -1,15 +1,8 @@
 # PS Backend API
 
-Backend Laravel untuk aplikasi billing/POS PlayStation. Project ini disiapkan sebagai REST API standalone yang bisa dipakai frontend Vue dari repository/domain berbeda.
+Laravel REST API untuk billing/POS PlayStation. Repository ini sudah dibersihkan menjadi backend API only; frontend Vue dipisahkan ke repository lain.
 
-## Tech Stack
-
-- PHP 8.2+
-- Laravel 11
-- Laravel Sanctum personal access token
-- PostgreSQL atau MySQL
-
-## Setup Lokal
+## Local Setup
 
 ```bash
 composer install
@@ -19,6 +12,12 @@ php artisan migrate --seed
 php artisan serve
 ```
 
+Base URL lokal:
+
+```text
+http://localhost:8000/api
+```
+
 Default seed user:
 
 | Email | Password |
@@ -26,61 +25,9 @@ Default seed user:
 | admin@test.com | password |
 | cashier@test.com | password |
 
-API berjalan di:
+## API Auth
 
-```text
-http://localhost:8000/api
-```
-
-## Environment Penting
-
-```env
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://api.example.com
-FRONTEND_URL=https://app.example.com
-
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=ps_backend
-DB_USERNAME=postgres
-DB_PASSWORD=secret
-
-CORS_ALLOWED_ORIGINS=https://app.example.com
-CORS_ALLOWED_METHODS=GET,POST,PUT,PATCH,DELETE,OPTIONS
-CORS_ALLOWED_HEADERS=Accept,Authorization,Content-Type,X-Requested-With
-```
-
-Untuk deployment, jangan gunakan `CORS_ALLOWED_ORIGINS=*` jika API memakai authorization header. Isi domain frontend yang valid.
-
-## Format Response API
-
-Success:
-
-```json
-{
-  "success": true,
-  "message": "Success message",
-  "data": {}
-}
-```
-
-Error:
-
-```json
-{
-  "success": false,
-  "message": "Error message",
-  "errors": {}
-}
-```
-
-Semua endpoint `/api/*` mengembalikan JSON, termasuk validation error, unauthenticated, not found, method not allowed, rate limit, dan server error.
-
-## Authentication
-
-Login menggunakan Sanctum bearer token, bukan session Laravel.
+Login:
 
 ```http
 POST /api/auth/login
@@ -92,25 +39,22 @@ Content-Type: application/json
 {
   "email": "admin@test.com",
   "password": "password",
-  "device_name": "vue-frontend"
+  "device_name": "postman"
 }
 ```
 
-Gunakan token dari response:
+Gunakan token:
 
 ```http
 Authorization: Bearer {access_token}
 ```
 
-Endpoint auth:
+## Endpoint
 
+- `GET /api/health`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `POST /api/auth/logout`
-
-## Endpoint Utama
-
-- `GET /api/health`
 - `GET /api/dashboard/summary`
 - `GET /api/stations`
 - `POST /api/stations/{station}/start`
@@ -125,33 +69,111 @@ Endpoint auth:
 - `PUT /api/settings`
 - `POST /api/settings/reset`
 
+Semua response API menggunakan format:
+
+```json
+{
+  "success": true,
+  "message": "Success message",
+  "data": {}
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Error message",
+  "errors": {}
+}
+```
+
+## Environment Production
+
+Jangan commit `.env`. Isi env production di dashboard Render/Koyeb/Docker secret.
+
+Minimal:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_KEY=base64:...
+APP_URL=https://api.example.com
+FRONTEND_URL=https://app.example.com
+
+DB_CONNECTION=pgsql
+DB_HOST=your-supabase-pooler-host
+DB_PORT=6543
+DB_DATABASE=postgres
+DB_USERNAME=postgres.xxxxx
+DB_PASSWORD=secret
+DB_SCHEMA=public
+DB_SSLMODE=require
+
+CACHE_DRIVER=file
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=array
+CORS_ALLOWED_ORIGINS=https://app.example.com
+```
+
+Untuk Supabase pooler, gunakan port `6543` dan `DB_SSLMODE=require`.
+
 ## Postman
 
-Import dua file ini:
+Import:
 
 - `ps-backend.postman_collection.json`
 - `ps-backend.postman_environment.json`
 
-Pilih environment `PS Backend API - Local`, jalankan request `Auth / Login`, lalu token otomatis disimpan ke variable `token`.
+Pilih environment `PS Backend API - Local`, jalankan `02 Auth / Login - Save Token`, lalu endpoint protected otomatis memakai `{{token}}`.
 
-## Production Checklist
+## Docker
+
+Build:
+
+```bash
+docker build -t ps-backend-api .
+```
+
+Run:
+
+```bash
+docker run --rm -p 8000:8000 --env-file .env ps-backend-api
+```
+
+Migrasi database di container:
+
+```bash
+docker run --rm --env-file .env ps-backend-api php artisan migrate --force
+docker run --rm --env-file .env ps-backend-api php artisan db:seed --class=UserSeeder --force
+```
+
+## Render
+
+Gunakan `render.yaml` atau buat Web Service Docker manual.
+
+Checklist:
+
+- Set `APP_KEY` di Render secret.
+- Set `APP_DEBUG=false`.
+- Set semua env database Supabase.
+- Set `CORS_ALLOWED_ORIGINS` ke domain frontend.
+- Health check: `/api/health`.
+- Jalankan migration dengan Render Shell atau job manual:
+
+```bash
+php artisan migrate --force
+php artisan db:seed --class=UserSeeder --force
+```
+
+## Production Commands
+
+Jika deploy tanpa Docker:
 
 ```bash
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
-php artisan view:cache
 ```
 
-Pastikan:
-
-- `APP_DEBUG=false`
-- `APP_KEY` sudah dibuat
-- `APP_URL` menunjuk domain API
-- `CORS_ALLOWED_ORIGINS` hanya berisi domain frontend
-- web server mengarah ke folder `public`
-- permission `storage` dan `bootstrap/cache` bisa ditulis
-- scheduler/queue dikonfigurasi bila nanti ada job async
-
-Frontend Vue lama masih ada di repository ini, tetapi backend API tidak bergantung pada build frontend untuk berjalan. Untuk deployment API standalone, cukup deploy kode Laravel, dependency Composer, database, dan konfigurasi web server.
+Pastikan `storage` dan `bootstrap/cache` writable oleh user runtime.
