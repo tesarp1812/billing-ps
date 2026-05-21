@@ -1,8 +1,18 @@
 FROM php:8.2-cli-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git unzip libpq-dev \
-    && docker-php-ext-install pdo_pgsql pgsql \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        curl \
+        libpq-dev \
+        libzip-dev \
+        zip \
+    && docker-php-ext-install \
+        pdo \
+        pdo_pgsql \
+        pgsql \
+        zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -22,12 +32,16 @@ RUN composer install \
 
 COPY . .
 
-RUN composer dump-autoload --optimize \
-    && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+RUN mkdir -p \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    && chmod -R 777 storage bootstrap/cache
 
-USER www-data
+RUN composer dump-autoload --optimize
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+CMD ["sh", "-c", "php artisan optimize:clear && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
