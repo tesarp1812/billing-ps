@@ -19,7 +19,12 @@ return [
 
     'allowed_methods' => explode(',', env('CORS_ALLOWED_METHODS', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')),
 
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')),
+    // 'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')),
+    'allowed_origins' => [
+        'http://localhost:5173',
+        'https://billing-ps-frontend-gamma.vercel.app',
+        'https://app.tamatech.site',
+    ],
 
     'allowed_origins_patterns' => [],
 
