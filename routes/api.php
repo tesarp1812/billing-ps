@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StationController;
 use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\NamaCustomerController;
 
 Route::get('/health', HealthController::class);
 
@@ -33,8 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::post('/checkout', CheckoutController::class);
     Route::get('/reports/daily', [ReportController::class, 'daily']);
-    
+
     Route::get('/settings', [SettingsController::class, 'index']);
     Route::put('/settings', [SettingsController::class, 'update']);
     Route::post('/settings/reset', [SettingsController::class, 'reset']);
+
+    Route::get('/nama-customer', [NamaCustomerController::class, 'index']);
 });
