@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('gender');
             $table->string('customer');
             $table->Integer('no_hp');
+            $table->text('alamat')->nullable();
             $table->timestamps();
         });
     }
