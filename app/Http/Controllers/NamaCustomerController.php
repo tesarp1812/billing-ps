@@ -13,7 +13,7 @@ class NamaCustomerController extends Controller
     public function index()
     {
         return response()->json(
-            NamaCustomer::select('nama', 'gender', 'customer','no_hp')->get()
+            NamaCustomer::select('nama', 'gender', 'customer','no_hp','alamat')->get()
         );
     }
 

@@ -8,5 +8,5 @@ class NamaCustomer extends Model
 {
     protected $table = 'nama_customer';
 
-    protected $fillable = ['nama', 'gender', 'customer', 'no_hp'];
+    protected $fillable = ['nama', 'gender', 'customer', 'no_hp', 'alamat'];
 }
